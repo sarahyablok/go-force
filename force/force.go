@@ -20,7 +20,7 @@ const (
 )
 
 func Create(version, clientId, clientSecret, userName, password, securityToken,
-	environment string) (*ForceApi, error) {
+	environment string, client *http.Client) (*ForceApi, error) {
 
 	oauth := &forceOauth{
 		clientId:      clientId,
@@ -29,8 +29,13 @@ func Create(version, clientId, clientSecret, userName, password, securityToken,
 		password:      password,
 		securityToken: securityToken,
 		environment:   environment,
-		client:        http.DefaultClient,
 	}
+
+	if client == nil {
+		oauth.client = http.DefaultClient
+	} else {
+		oauth.client = client
+	} 
 
 	forceApi := &ForceApi{
 		apiResources:           make(map[string]string),
@@ -59,13 +64,19 @@ func Create(version, clientId, clientSecret, userName, password, securityToken,
 	return forceApi, nil
 }
 
-func CreateWithAccessToken(version, clientId, accessToken, instanceUrl string) (*ForceApi, error) {
+func CreateWithAccessToken(version, clientId, accessToken, instanceUrl string, client *http.Client) (*ForceApi, error) {
 
 	oauth := &forceOauth{
 		clientId:    clientId,
 		AccessToken: accessToken,
 		InstanceUrl: instanceUrl,
 		client:      http.DefaultClient,
+	}
+
+	if client == nil {
+		oauth.client = http.DefaultClient
+	} else {
+		oauth.client = client
 	}
 
 	forceApi := &ForceApi{
@@ -106,14 +117,9 @@ func (forceApi *ForceApi) UpdateAccessToken(accessToken string) error {
 	return nil
 }
 
-// Instead of using the default http client, set your own.
-func (forceApi *ForceApi) SetClient(client *http.Client) {
-	forceApi.oauth.client = client
-}
-
 // Used when running tests.
 func createTest() *ForceApi {
-	forceApi, err := Create(testVersion, testClientId, testClientSecret, testUserName, testPassword, testSecurityToken, testEnvironment)
+	forceApi, err := Create(testVersion, testClientId, testClientSecret, testUserName, testPassword, testSecurityToken, testEnvironment, nil)
 	if err != nil {
 		fmt.Printf("Unable to create ForceApi for test: %v", err)
 		os.Exit(1)
